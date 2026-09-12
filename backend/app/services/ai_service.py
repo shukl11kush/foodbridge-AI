@@ -42,33 +42,36 @@ Format requirements:
 Do NOT include any markdown code block ticks (```) or conversational intro/outro text. Return ONLY raw JSON array.
 """
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
-    headers = {"Content-Type": "application/json"}
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt}
-                ]
-            }
-        ]
-    }
+    model_names = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
 
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
-        if response.status_code == 200:
-            res_data = response.json()
-            candidates = res_data.get("candidates", [])
-            if candidates:
-                text_content = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
-                if text_content.startswith("```"):
-                    text_content = text_content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-                parsed = json.loads(text_content)
-                if isinstance(parsed, list):
-                    return parsed
-        else:
-            logger.warning(f"Gemini API returned status {response.status_code}: {response.text}")
-    except Exception as e:
-        logger.warning(f"Gemini REST API call failed: {e}")
+    for model_name in model_names:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt}
+                    ]
+                }
+            ]
+        }
+
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            if response.status_code == 200:
+                res_data = response.json()
+                candidates = res_data.get("candidates", [])
+                if candidates:
+                    text_content = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
+                    if text_content.startswith("```"):
+                        text_content = text_content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+                    parsed = json.loads(text_content)
+                    if isinstance(parsed, list):
+                        return parsed
+            else:
+                logger.warning(f"Gemini API model {model_name} returned status {response.status_code}: {response.text}")
+        except Exception as e:
+            logger.warning(f"Gemini REST API call for {model_name} failed: {e}")
 
     return None

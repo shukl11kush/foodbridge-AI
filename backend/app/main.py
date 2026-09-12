@@ -37,11 +37,13 @@ app.include_router(admin.router)
 
 @app.on_event("startup")
 def seed_demo_data():
-    """Seeds initial demo accounts and shelters if database is empty."""
+    """Seeds initial demo accounts and shelters if missing."""
     db = SessionLocal()
     try:
-        if db.query(models.User).count() == 0:
-            logger.info("Seeding initial demo data for FoodBridge-AI...")
+        # Check if demo donor exists
+        donor_user = db.query(models.User).filter(models.User.email == "donor@bistrogourmet.com").first()
+        if not donor_user:
+            logger.info("Seeding demo accounts into database...")
             
             # 1. Admin Account
             admin_user = models.User(
@@ -144,7 +146,7 @@ def seed_demo_data():
             db.add(s3_prof)
 
             db.commit()
-            logger.info("Demo data seeding completed successfully.")
+            logger.info("Demo data seeded successfully.")
     except Exception as e:
         logger.error(f"Error seeding demo data: {e}")
     finally:
